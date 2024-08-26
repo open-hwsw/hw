@@ -7,6 +7,8 @@ tb_help="
 |doc/readme.md      |this markdown file described directory tree                        |
 |bug                |back up bug log and waveform, share with other engineers           |
 |flist              |this directory used to store file list                             |
+|flist/lib.f        |library file list                                                  |
+|flist/modle.f      |model file list                                                    |
 |flist/rtl.f        |register transfer level file list                                  |
 |flist/tb.f         |testbench file list                                                |
 |rtl                |this directory used to store rtl files                             |
@@ -307,15 +309,22 @@ endif
 endif
 "
 
-while getopts "t:c" opts; do
+while getopts "co:r:t:" opts;
+do
     case $opts in
+        o)
+            org=$OPTARG
+            ;;
+        r)
+            repo=$OPTARG
+            ;;
         t)
             top_module=$OPTARG
             ;;
-        #c)
-            #rm -rfv doc/ bug/ flist/ model/ vip/ ral/ env/ tc/ tb/ script/ run/
-            #exit 0
-            #;;
+        c)
+            rm -rfv doc/ bug/ flist/ model/ vip/ ral/ env/ tc/ tb/ script/ run/ rtl/
+            exit 1
+            ;;
         *)
             echo "invalid options"
             ;;
@@ -324,9 +333,23 @@ done
 
 rm -rfv doc/ bug/ flist/ model/ vip/ ral/ env/ tc/ tb/ script/ run/
 
-if [ -v $top_module ]; then
-    top_module=tb
-fi 
+if [ -z "$org" ] || [ -z "$repo" ] || [ -z "$top_module" ]; then
+    if [ -z "$org" ]; then
+        echo "please setting your organization name by -o option"
+    fi
+    if [ -z "$repo" ]; then
+        echo "please setting your repository/project name by -r option"
+    fi
+    if [ -z "$top_module" ]; then
+        echo "please setting your top module name by -t option"
+    fi
+    exit 1;
+fi
+
+if [[ ! "$top_module" =~ tb$ ]]; then
+    echo "please setting a name with the suffix tb"
+    exit 1
+fi
 
 #doc
 if [ ! -d doc ]; then
@@ -349,6 +372,20 @@ else
 	echo "directory flist exists"
 fi
 
+#flist/lib.f
+if [ ! -e flist/lib.f ]; then
+	touch flist/lib.f
+else
+	echo "file flist/lib.f exists"
+fi
+
+#flist/model.f
+if [ ! -e flist/model.f ]; then
+	touch flist/model.f
+else
+	echo "file flist/model.f exists"
+fi
+
 #flist/rtl.f
 if [ ! -e flist/rtl.f ]; then
 	touch flist/rtl.f
@@ -357,18 +394,10 @@ else
 fi
 
 #flist/tb.f
-if [ "$top_module" == "tb" ]; then
-    if [ ! -e flist/"$top_module".f ]; then
-        touch flist/"$top_module".f
-    else
-        echo "file flist/${top_module}.f exists"
-    fi
+if [ ! -e flist/tb.f ]; then
+    touch flist/tb.f
 else
-    if [ ! -e flist/"$top_module"_tb.f ]; then
-        touch flist/"$top_module"_tb.f
-    else
-        echo "file flist/${top_module}_tb.f exists"
-    fi
+    echo "file flist/tb.f exists"
 fi
 
 echo -e "
@@ -376,6 +405,8 @@ echo -e "
 
 // USER CODE END
 
+-F lib.f
+-F model.f
 -F rtl.f
 
 +incdir+../vip
