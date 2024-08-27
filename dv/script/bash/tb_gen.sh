@@ -25,6 +25,9 @@ tb_help="
 |env                |this directory used to store uvm env layer files                   |
 |tc                 |this directory used to store uvm test layer files                  |
 |tb                 |this directory used to store testbench files                       |
+|tb/tb.sv           |testbench                                                          |
+|tb/tb_gcr.sv       |testbench, connect global clock and reset                          |
+|tb/tb_conn.sv      |testbench, connect bfm to dut                                      |
 |script             |this directory used to store script files                          |
 |script/bash        |this directory used to store bash script files                     |
 |script/bash/run.sh |this bash script file used to build simulation flow                |
@@ -43,6 +46,9 @@ tb_help="
 |run/cov            |this directory used to store simulation coverage date              |
 |run/cov/cfg        |this directory used to store simulation coverage configuration file|
 |run/cov/cfg/cov.cfg|coverage configuration file                                        |
+|sw                 |this directory used to store software files                        |
+|sw/src             |this directory used to store software source files                 |
+|sw/inc             |this directory used to store software header files                 |
 "
 
 run_help="
@@ -322,7 +328,7 @@ do
             top_module=$OPTARG
             ;;
         c)
-            rm -rfv doc/ bug/ flist/ model/ vip/ ral/ env/ tc/ tb/ script/ run/ rtl/
+            rm -rfv doc/ bug/ flist/ model/ vip/ ral/ env/ tc/ tb/ script/ run/ rtl/ sw/
             exit 1
             ;;
         *)
@@ -333,16 +339,16 @@ done
 
 rm -rfv doc/ bug/ flist/ model/ vip/ ral/ env/ tc/ tb/ script/ run/
 
-if [ -z "$org" ] || [ -z "$repo" ] || [ -z "$top_module" ]; then
-    if [ -z "$org" ]; then
-        echo "please setting your organization name by -o option"
-    fi
-    if [ -z "$repo" ]; then
-        echo "please setting your repository/project name by -r option"
-    fi
-    if [ -z "$top_module" ]; then
-        echo "please setting your top module name by -t option"
-    fi
+if [ -z "$org" ]; then
+    echo "please setting your organization name by -o option"
+    exit 1;
+fi
+if [ -z "$repo" ]; then
+    echo "please setting your repository/project name by -r option"
+    exit 1;
+fi
+if [ -z "$top_module" ]; then
+    echo "please setting your top module name by -t option"
     exit 1;
 fi
 
@@ -394,10 +400,10 @@ else
 fi
 
 #flist/tb.f
-if [ ! -e flist/tb.f ]; then
-    touch flist/tb.f
+if [ ! -e flist/$top_module.f ]; then
+    touch flist/$top_module.f
 else
-    echo "file flist/tb.f exists"
+    echo "file flist/$top_module.f exists"
 fi
 
 echo -e "
@@ -414,7 +420,7 @@ echo -e "
 +incdir+../env
 +incdir+../tc
 +incdir+../tb
-../tb/tb.sv" > flist/tb.f
+../tb/$top_module.sv" > flist/$top_module.f
 
 #rtl
 if [ ! -d rtl ]; then
@@ -520,10 +526,22 @@ else
 	echo "directory tb exists"
 fi
 #tb/tb.sv
-if [ ! -e tb/tb.sv ]; then
-    touch tb/tb.sv
+if [ ! -e tb/$top_module.sv ]; then
+    touch tb/$top_module.sv
 else
-    echo "file tb/tb.sv exists"
+    echo "file tb/$top_module.sv exists"
+fi
+#tb/tb_gcr.sv
+if [ ! -e tb/${top_module}_gcr.sv ]; then
+    touch tb/${top_module}_gcr.sv
+else
+    echo "file tb/${top_module}_gcr.sv exists"
+fi
+#tb/tb_conn.sv
+if [ ! -e tb/${top_module}_conn.sv ]; then
+    touch tb/${top_module}_conn.sv
+else
+    echo "file tb/${top_module}_conn.sv exists"
 fi
 
 tb_main="
@@ -534,26 +552,32 @@ tb_main="
     \`include \"uvm_pkg.sv\"
 \`endif
 
-module automatic tb;
+module automatic $top_module;
 
     \`ifdef UVM
         import uvm_pkg::*; 
     \`endif
     
+    //Global Clock and Reset
+    \`include \"${top_module}_gcr.sv\"
+
+    //Connect BFM to DUT
+    \`include \"${top_module}_conn.sv\"
+
     \`ifdef UVM
-        \`include \"test_top.sv\"
+        \`include \"${top_module}_test_top.sv\"
         
         initial begin
             run_test();
         end
     \`endif
 
-endmodule : tb
+endmodule : $top_module
 
 \`endif //TB
 "
 
-echo "$tb_main" > tb/tb.sv
+echo "$tb_main" > tb/$top_module.sv
 
 #script
 if [ ! -d script ]; then
@@ -763,6 +787,31 @@ if [ ! -e doc/readme.md ]; then
 	touch doc/readme.md
 else
 	echo "file doc/readme.md exists"
+fi
+
+#sw
+if [ ! -d sw ]; then
+	mkdir -pv sw
+else
+	echo "directory sw exists"
+fi
+
+if [ ! -d sw/inc ]; then
+	mkdir -pv sw/inc
+else
+	echo "directory sw/inc exists"
+fi
+
+if [ ! -d sw/src ]; then
+	mkdir -pv sw/src
+else
+	echo "directory sw/src exists"
+fi
+
+if [ ! -e sw/src/main.c ]; then
+	mkdir -pv sw/src/main.c
+else
+	echo "file sw/src/main.c exists"
 fi
 
 #echo to doc/readme.md and console
