@@ -59,6 +59,10 @@ run_help="
 . run -simulator xx                                 : set the default simulator, xx can be vcs / questaSim / verilator / vivado, default is vcs
 . run -waveform xx                                  : set the default waveform, xx can be verdi / dve / gtkwave, default is verdi
 
+# generate interface
+. run -ifgen xx				            : generate a interface demo
+. run -ifgen xx -modref xx			    : generate a interface base on a module
+
 # waveform debug
 . run -v                                            : open waveform debug tool
 
@@ -68,8 +72,8 @@ run_help="
 
 # generate test case
 . run -tcgen -tcidx xx -tcname xx                   : generate a new test case
-. run -tcgen -tcidx xx -tcname xx -tcref xx         : generate a new test case from a old testcase
-. run -tcrtsh                                       : refresh other test case that copy form other path
+. run -tcgen -tcidx xx -tcname xx -tcref xx         : generate a new test case from a old test case
+. run -tcmerge                                      : merge other test case that copy form other path
 
 # delete test case
 . run -tcdel xx                                     : delete a test case by tcidx
