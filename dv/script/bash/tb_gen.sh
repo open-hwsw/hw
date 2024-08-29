@@ -59,6 +59,13 @@ run_help="
 . run -simulator xx                                 : set the default simulator, xx can be vcs / questaSim / verilator / vivado, default is vcs
 . run -waveform xx                                  : set the default waveform, xx can be verdi / dve / gtkwave, default is verdi
 
+# uvm cfg
+. run -cfg -uvm xx				    : xx can be (on, off)
+. run -cfg -uvm -v xx                               : xx can be (1.1, 1.2)
+
+# sva cfg
+. run -cfg -sva xx				    : xx can be (on, off)
+
 # generate interface
 . run -ifgen xx				            : generate a interface demo
 . run -ifgen xx -modref xx			    : generate a interface base on a module
