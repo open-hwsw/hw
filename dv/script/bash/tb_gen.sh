@@ -120,6 +120,7 @@ run_help="
 . run -ralgen -topblock xx                          : generate a register model by ralf file
 "
 
+
 Makefile="
 ORG         ?= hwsw
 REPO        ?= 
@@ -147,7 +148,7 @@ include cfg/dbg.mk
 include cfg/solver.mk
 include cfg/uvm.mk
 include cfg/assert.mk
-include cfg/cov.mk
+include cfg/${TOP_MODULE}cov.mk
 include cfg/log.mk
 include cfg/dump.mk
 include cfg/ams.mk
@@ -168,6 +169,35 @@ sim:
 wav:
     \$(WAVEFORM) -nologo -f \$(TB_FILES) -ptrTitle \$(TOP_MODULE) -top \$(TOP_MODULE)
 
+"
+
+#"run/cfg/cov.mk"
+cov_mk="
+COV_EN          ?= 0
+CODE_COV_EN     ?= 0
+SVA_COV_EN      ?= 0
+COV_DIR          = cov
+
+ifeq (\$(COV_EN), 1)
+
+ifeq (\$(CODE_COV_EN), 1)
+    CMP_OPTS += -cm line+cond+fsm+tgl+branch -cm_dir \$(COV_DIR)/\$(TOP_MODULE).vdb -cm_hier cov/cfg/cov.cfg
+    SIM_OPTS += -cm line+cond+fsm+tgl+branch -cm_log \$(COV_DIR)/cov.log
+endif
+
+ifeq (\$(SVA_EN), 1)
+
+ifeq (\$(SVA_COV_EN), 1)
+    CMP_OPTS += -cm assert
+    SIM_OPTS += -cm assert
+else
+    CMP_OPTS += -assert disable_cover
+endif
+
+endif
+
+cov:
+    \${WAVEFORM} -cov covdir \${COV_DOR}/\${TOP_MODULE}.vdb -elfile \${TOP_MODULE}.el
 "
 
 run_main="#!/bin/bash
@@ -769,6 +799,18 @@ if [ ! -d run/cov ]; then
 	mkdir -pv run/cov
 else
 	echo "directory run/cov exists"
+fi
+#run/cov/el
+if [ ! -d run/cov/el ]; then
+	mkdir -pv run/cov/el
+else
+	echo "directory run/cov/el exists"
+fi
+#run/cov/el/tb.el
+if [ ! -d run/cov/$top_module.el ]; then
+	mkdir -pv run/cov/$top_module.el
+else
+	echo "directory run/cov/el/$top_module.el exists"
 fi
 #run/cov/cfg
 if [ ! -d run/cov/cfg ]; then
