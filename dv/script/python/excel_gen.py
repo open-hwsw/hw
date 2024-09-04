@@ -1,5 +1,8 @@
 from openpyxl import Workbook
 
+org=input("please setting your organization name: ")
+prj=input("please setting your repository/project name: ")
+
 wb = Workbook()
 
 ws_reg=wb.create_sheet("Register")
