@@ -266,7 +266,7 @@ ifeq (\$(V2K_EN),1)
     CMP_OPTS += +v2k
 endif" sim/cfg/vlg.mk
 
-#assert.mk
+#sva.mk
 echo -e "SVA_EN         ?= 1
 SVA_FAIL_MAX_NUM ?= 20
 SVA_SUCC_EN      ?= 1
@@ -281,7 +281,7 @@ endif
     SIM_OPTS += -assert report=ova.report
 else
     CMP_OPTS += -assert disable
-endif" > sim/cfg/assert.mk
+endif" > sim/cfg/sva.mk
 
 #cov.mk
 echo -e "COV_EN         ?= 0
@@ -945,7 +945,7 @@ rgs_analysis () {
 
 if [ -n \"\$rgsnum\" ]; then
 
-    make cmp
+    make cmp COV_EN=1 CODE_COV_EN=1 SVA_COV_EN=1
 
     if [ \$? -ne θ ]; then
         exit 2
@@ -962,9 +962,9 @@ if [ -n \"\$rgsnum\" ]; then
             for ((i=0; i<\$rgsnum; i++))
             do
                 if [ -n \"\$waveoff\" ]; then
-                    make sim tc=\${tcs[\${tcidx}]} WAVE_EN=0 SIM_LOG_DIR=log/rgs/\$rgs_begin_time
+                    make sim tc=\${tcs[\${tcidx}]} WAVE_EN=0 SIM_LOG_DIR=log/rgs/\$rgs_begin_time COV_EN=1 CODE_COV_EN=1 SVA_COV_EN=1
                 else
-                    make sim tc=\${tcs[\${tcidx}]} WAVE_EN=1 SIM_LOG_DIR=log/rgs/\$rgs_begin_time
+                    make sim tc=\${tcs[\${tcidx}]} WAVE_EN=1 SIM_LOG_DIR=log/rgs/\$rgs_begin_tim COV_EN=1 CODE_COV_EN=1 SVA_COV_EN=1e
                 fi
             done
 
@@ -982,9 +982,9 @@ if [ -n \"\$rgsnum\" ]; then
                 for ((i=0;i<\$rgsnum;i++))
                 do
                     if [ -n \"\$waveoff\" ]; then
-                        make sim tc=\${tcname} WAVE_EN=θ SIM_LOG_DIR=log/rgs/\$rgs_begin_time
+                        make sim tc=\${tcname} WAVE_EN=θ SIM_LOG_DIR=log/rgs/\$rgs_begin_time COV_EN=1 CODE_COV_EN=1 SVA_COV_EN=1
                     else
-                        make sim tc=\${tcname} WAVE_EN=1 SIM_LOG_DIR=log/rgs/\$rgs_begin_time
+                        make sim tc=\${tcname} WAVE_EN=1 SIM_LOG_DIR=log/rgs/\$rgs_begin_time COV_EN=1 CODE_COV_EN=1 SVA_COV_EN=1
                     fi
                 done
 
@@ -1006,9 +1006,9 @@ if [ -n \"\$rgsnum\" ]; then
         for (( i=0; i<\$rgsnum; i++ ))
         do
             if [ -n \"\$waveoff\" ]; then
-                make sim tc=\${tcname} WAVE_EN=θ SIM_LOG_DIR=log/rgs/\$rgs_begin_time
+                make sim tc=\${tcname} WAVE_EN=θ SIM_LOG_DIR=log/rgs/\$rgs_begin_time COV_EN=1 CODE_COV_EN=1 SVA_COV_EN=1
             else
-                make sim tc=\${tcname} WAVE_EN=1 SIM_LOG_DIR=log/rgs/\$rgs_begin_time
+                make sim tc=\${tcname} WAVE_EN=1 SIM_LOG_DIR=log/rgs/\$rgs_begin_time COV_EN=1 CODE_COV_EN=1 SVA_COV_EN=1
             fi
         done
 
@@ -1022,9 +1022,9 @@ if [ -n \"\$rgsnum\" ]; then
             for key in \"\${tcs[@]}\"
             do
                 if [ -n \"\$waveoff\" ]; then
-                    make sim tc=\$key WAVE_EN=0 SIM_LOG_DIR=log/rgs/\$rgs_begin_time
+                    make sim tc=\$key WAVE_EN=0 SIM_LOG_DIR=log/rgs/\$rgs_begin_time COV_EN=1 CODE_COV_EN=1 SVA_COV_EN=1
                 else
-                    make sim tc=\$key WAVE_EN=1 SIM_LOG_DIR=log/rgs/\$rgs_begin_time
+                    make sim tc=\$key WAVE_EN=1 SIM_LOG_DIR=log/rgs/\$rgs_begin_time COV_EN=1 CODE_COV_EN=1 SVA_COV_EN=1
                 fi
             done
         done
