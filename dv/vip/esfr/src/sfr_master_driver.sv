@@ -72,10 +72,10 @@ class sfr_master_driver extends uvm_driver;
         @(vif.sfr_master_driver_cb);
 
         if(cfg.multi_page == 1)begin
-            if(vif.sfr_master_driver_cb.sfr_page_sel !== item.addr[$bits(vif.sfrdatao)-:$bits(vif.sfr_page_sel)]begin
+            if(vif.sfr_master_driver_cb.sfr_page_sel !== item.addr[7+:$bits(vif.sfr_page_sel)]begin
+                vif.sfr_master_driver_cb.sfraddr  <= { {$bits(vif.esfr_page_sel){1'b0}}, cfg.page_switch_reg_addr };
                 vif.sfr_master_driver_cb.sfrwe    <= 1'b1;
-                vif.sfr_master_driver_cb.sfraddr  <= {cfg.page_switch_reg_addr};
-                vif.sfr_master_driver_cb.sfrdatao <= {cfg.page_switch_key,item.addr[$bits(vif.sfrdatao)-:$bits(vif.sfr_page_sel)]};
+                vif.sfr_master_driver_cb.sfrdatao <= {cfg.page_switch_key, item.addr[7+:$bits(vif.sfr_page_sel)]};
                 @(vif.sfr_master_driver_cb);
             end
         end
@@ -84,6 +84,7 @@ class sfr_master_driver extends uvm_driver;
 
         if(item.kind == sfr_item::WRITE)begin
             vif.sfr_master_driver_cb.sfrwe <= 1'b1;
+            vif.sfr_master_driver_cb.sfroe <= 1'b0;
             vif.sfr_master_driver_cb.sfrdatao <= item.data;
             do begin
                 @(vif.sfr_master_driver_cb);
@@ -91,6 +92,7 @@ class sfr_master_driver extends uvm_driver;
             vif.sfr_master_driver_cb.sfrwe <= 1'b0;
         end else if( item.kind == sfr_item::READ )begin
             vif.sfr_master_driver_cb.sfroe <= 1'b1;
+            vif.sfr_master_driver_cb.sfrwe <= 1'b0;
             do begin
                 @(vif.sfr_master_driver_cb);
             end while(vif.sfr_master_driver_cb.sfrack == 1'b0);

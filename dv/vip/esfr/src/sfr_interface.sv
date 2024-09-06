@@ -18,6 +18,7 @@ interface sfr_if(input clk);
     logic [$clog2(`SFR_PAGE_NUM)-1:0]   sfr_page_sel;
     
     clocking sfr_master_driver_cb@(posedge clk);
+        default input `SFR_IF_SETUP_TIME output `SFR_IF_HOLD_TIME;
         output sfraddr      ;
         input  sfrack       ;
         output sfrwe        ;
@@ -29,6 +30,7 @@ interface sfr_if(input clk);
     endclocking : sfr_master_driver_cb
 
     clocking sfr_master_monitor_cb@(posedge clk);
+        default input `SFR_IF_SETUP_TIME output `SFR_IF_HOLD_TIME;
         input  sfraddr      ;
         input  sfrack       ;
         input  sfrwe        ;
