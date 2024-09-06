@@ -173,7 +173,7 @@ sim:
 	@echo \"\"
 
 wav:
-    \$(WAVEFORM) -nologo -f \$(TB_FILES) -ptrTitle \$(TOP_MODULE) -top \$(TOP_MODULE)
+    \$(WAVEFORM) -nologo  -ptrTitle \$ORG_\$PRJ_\$(TOP_MODULE) -f \$(TB_FILES) -top \$(TOP_MODULE)
 
 "
 
