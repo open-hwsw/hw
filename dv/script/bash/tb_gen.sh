@@ -60,15 +60,21 @@ run_help="
 . run -waveform xx                                  : set the default waveform, xx can be verdi / dve / gtkwave, default is verdi
 
 # uvm cfg
-. run -cfg -uvm xx				    : xx can be (on, off)
+. run -cfg -uvm xx				                    : xx can be (on, off)
 . run -cfg -uvm -v xx                               : xx can be (1.1, 1.2)
 
+# cov cfg
+. run -cfg -cov xx                                  : xx can be (on, off), default is off
+
 # sva cfg
-. run -cfg -sva xx				    : xx can be (on, off)
+. run -cfg -sva xx				                    : xx can be (on, off), default is off
+
+# rgs cfg
+. run -cfg -rgs -tcidx xx xx                        : 1st xx tcidx, 2nd xx can be(on, off), default is on
 
 # generate interface
-. run -ifgen xx				            : generate a interface demo
-. run -ifgen xx -modref xx			    : generate a interface base on a module
+. run -ifgen xx				                        : generate a interface demo
+. run -ifgen xx -modref xx			                : generate a interface base on a module
 
 # waveform debug
 . run -v                                            : open waveform debug tool
@@ -147,8 +153,8 @@ include cfg/lint.mk
 include cfg/dbg.mk
 include cfg/solver.mk
 include cfg/uvm.mk
-include cfg/assert.mk
-include cfg/${TOP_MODULE}cov.mk
+include cfg/sva.mk
+include cfg/cov.mk
 include cfg/log.mk
 include cfg/dump.mk
 include cfg/ams.mk
@@ -171,7 +177,6 @@ wav:
 
 "
 
-#"run/cfg/cov.mk"
 cov_mk="
 COV_EN          ?= 0
 CODE_COV_EN     ?= 0
@@ -200,9 +205,26 @@ cov:
     \${WAVEFORM} -cov covdir \${COV_DOR}/\${TOP_MODULE}.vdb -elfile \${TOP_MODULE}.el
 "
 
+sva_mk="
+SVA_EN           ?= 0
+SVA_FAIL_MAX_NUM ?= 20
+SVA_SUCC_EN      ?= 1
+SVA_SUCC_MAX_NUM ?= 20
+
+ifeq (\$(SVA_EN), 1)
+    CMP_OPTS += -assert enable_diag -assert dbgopt
+    SIM_OPTS += -assert maxfail=\$(SVA_FAIL_MAX_NUM) +fsdb_sva_index_info +fsdb+sva_status
+ifeq (\$(SVA_SUCC_EN), 1)
+    SIM_OPTS += -assert success -assert summary +maxsuccess=\$(SVA_SUCC_MAX_NUM) +fsdb+sva_success
+endif
+    SIM_OPTS += -assert report=ova.report
+else
+    CMP_OPTS += -assert disable
+"
+
 run_main="#!/bin/bash
 
-opts=\$(getopt -o -v -a -l editor:,simulator:,waveform: -- \"\$@\")
+opts=\$(getopt -o -v -a -l editor:,simulator:,waveform:,cfg,sva:,uvm: -- \"\$@\")
 
 if [ \$? != 0 ]; then
     exit 1;
@@ -223,6 +245,20 @@ while :; do
             ;;
         --waveform)
             waveform=\$2
+            shift 2
+            ;;
+        --cfg)
+            cfg=1
+            shift 1
+            ;;
+        --sva)
+            sva=1
+            en=\$2
+            shift 2
+            ;;
+        --uvm)
+            uvm=1
+            en=\$2
             shift 2
             ;;
         --)
@@ -264,9 +300,31 @@ if [ -n \"\$waveform\" ]; then
     fi
 fi
 
+if [ -n \"\$cfg\" ]; then
+
+    if [ -n \"\$sva\" ]; then
+        if [ -n \"\$en\" ]; then
+            if [ \"\$en\" == \"on\" ]; then
+                sed -i 's/\\(SVA_EN.*\\?= \\)\\(0\\)/\11/g' cfg/sva.mk
+            else
+                sed -i 's/\\(SVA_EN.*\\?= \\)\\(1\\)/\10/g' cfg/sva.mk
+            fi
+        fi 
+    fi 
+    if [ -n \"\$uvm\" ]; then
+        if [ -n \"\$en\" ]; then
+            if [ \"\$en\" == \"on\" ]; then
+                sed -i 's/\\(UVM_EN.*\\?= \\)\\(0\\)/\11/g' cfg/uvm.mk
+            else
+                sed -i 's/\\(UVM_EN.*\\?= \\)\\(1\\)/\10/g' cfg/uvm.mk
+            fi
+        fi 
+    fi 
+fi
+
 "
 
-uvm_mk_main="
+uvm_mk="
 UVM_EN                  ?= 1
 UVM_VER                 ?= 1.2
 DPI_HDL_API_EN          ?= 1
@@ -698,23 +756,27 @@ fi
 #run/cfg/uvm.mk
 if [ ! -e run/cfg/uvm.mk ]; then
 	touch  run/cfg/uvm.mk
-    echo -e "$uvm_mk_main" > run/cfg/uvm.mk 
+    echo -e "$uvm_mk" > run/cfg/uvm.mk 
 else
 	echo "file run/cfg/uvm.mk exists"
 fi
 
-#run/cfg/assert.mk
-if [ ! -e run/cfg/assert.mk ]; then
-	touch  run/cfg/assert.mk
+#run/cfg/sva.mk
+if [ ! -e run/cfg/sva.mk ]; then
+	touch  run/cfg/sva.mk
 else
-	echo "file run/cfg/assert.mk exists"
+	echo "file run/cfg/sva.mk exists"
 fi
+echo "$sva_mk" > run/cfg/sva.mk
+
 #run/cfg/cov.mk
 if [ ! -e run/cfg/cov.mk ]; then
 	touch  run/cfg/cov.mk
 else
 	echo "file run/cfg/cov.mk exists"
 fi
+echo "$cov_mk" > run/cfg/cov.mk
+
 #run/cfg/log.mk
 if [ ! -e run/cfg/log.mk ]; then
 	touch  run/cfg/log.mk
