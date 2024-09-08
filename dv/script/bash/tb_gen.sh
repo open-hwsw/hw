@@ -52,29 +52,32 @@ tb_help="
 "
 
 run_help="
-# tools
-. run -org xx                                       : set the organization name, default is hwsw
-. run -repo xx                                      : set the repository or project name
-. run -editor xx                                    : set the default editor, xx can be vim / gvim / emacs / gedit / nano, defautl is gvim
-. run -simulator xx                                 : set the default simulator, xx can be vcs / questaSim / verilator / vivado, default is vcs
-. run -waveform xx                                  : set the default waveform, xx can be verdi / dve / gtkwave, default is verdi
+
+# information cfg
+. run -cfg -org xx                                  : set the organization name
+. run -cfg -prj xx                                  : set the repository or project name
+
+# tools cfg
+. run -cfg -editor xx                               : set the default editor, xx can be vim / gvim / emacs / gedit / nano, defautl is gvim
+. run -cfg -simulator xx                            : set the default simulator, xx can be vcs / questaSim / verilator / vivado, default is vcs
+. run -cfg -waveform xx                             : set the default waveform, xx can be verdi / dve / gtkwave, default is verdi
 
 # uvm cfg
-. run -cfg -uvm xx				                    : xx can be (on, off)
-. run -cfg -uvm -v xx                               : xx can be (1.1, 1.2)
+. run -cfg -uvm xx                                  : xx can be (on, off)
+. run -cfg -uvm -ver xx                             : xx can be (1.1, 1.2)
 
 # cov cfg
 . run -cfg -cov xx                                  : xx can be (on, off), default is off
 
 # sva cfg
-. run -cfg -sva xx				                    : xx can be (on, off), default is off
+. run -cfg -sva xx                                  : xx can be (on, off), default is off
 
 # rgs cfg
 . run -cfg -rgs -tcidx xx xx                        : 1st xx tcidx, 2nd xx can be(on, off), default is on
 
 # generate interface
-. run -ifgen xx				                        : generate a interface demo
-. run -ifgen xx -modref xx			                : generate a interface base on a module
+. run -ifgen xx                                     : generate a interface demo
+. run -ifgen xx -modref xx                          : generate a interface base on a module
 
 # waveform debug
 . run -v                                            : open waveform debug tool
@@ -128,8 +131,8 @@ run_help="
 
 
 Makefile="
-ORG         ?= hwsw
-REPO        ?= 
+ORG         ?= 
+PRJ         ?= 
 EDITOR      ?= gvim
 SIMULATOR   ?= vcs
 WAVEFORM    ?= verdi
@@ -224,7 +227,7 @@ else
 
 run_main="#!/bin/bash
 
-opts=\$(getopt -o -v -a -l editor:,simulator:,waveform:,cfg,sva:,uvm: -- \"\$@\")
+opts=\$(getopt -o -v -a -l cfg,org:,prj:,uvm::,ver:,sva:,cov:,editor:,simulator:,waveform:, -- \"\$@\")
 
 if [ \$? != 0 ]; then
     exit 1;
@@ -235,6 +238,18 @@ eval set -- \"\$opts\"
 while :; do
 
     case \$1 in
+        --cfg)
+            cfg=1
+            shift 1
+            ;;
+        --org)
+            org=\$2
+            shift 2
+            ;;
+        --prj)
+            prj=\$2
+            shift 2
+            ;;
         --editor)
             editor=\$2
             shift 2
@@ -247,18 +262,25 @@ while :; do
             waveform=\$2
             shift 2
             ;;
-        --cfg)
-            cfg=1
-            shift 1
+        --uvm)
+            if [[ \"\$3\" == \"on\" ]] || [[ \"\$3\" == \"off\" ]]; then
+                uvm=\$3
+                shift 3
+            else
+                uvm=1
+                shift 2
+            fi
             ;;
-        --sva)
-            sva=1
-            en=\$2
+        --ver)
+            ver=\$2
             shift 2
             ;;
-        --uvm)
-            uvm=1
-            en=\$2
+        --sva)
+            sva=\$2
+            shift 2
+            ;;
+        --cov)
+            cov=\$2
             shift 2
             ;;
         --)
@@ -270,56 +292,91 @@ while :; do
 
 done
 
-if [ -n \"\$editor\" ]; then
-    if [ which \$editor -ne 0 ]; then
-        echo \"\$editor not found in system, please select anthor editor\"
-        exit 1
-    else
-        #sed -i \"s/\(EDITOR *?= \).*/\1\$editor/\" Makefile
-        exit 0
-    fi
-fi
-
-if [ -n \"\$simulator\" ]; then
-    if [ which \$simulator -ne 0 ]; then
-        echo \"\$simulator not found in system, please select anthor simulator\"
-        exit 1
-    else
-        #sed -i \"s/\(SIMULATOR *?= \).*/\1\$simulator/\" Makefile
-        exit 0
-    fi
-fi
-
-if [ -n \"\$waveform\" ]; then
-    if [ which \$waveform -ne 0 ]; then
-        echo \"\$waveform not found in system, please select anthor waveform\"
-        exit 1
-    else
-        #sed -i \"s/\(WAVEFORM *?= \).*/\1\$waveform/\" Makefile
-        exit 0
-    fi
-fi
-
 if [ -n \"\$cfg\" ]; then
 
-    if [ -n \"\$sva\" ]; then
-        if [ -n \"\$en\" ]; then
-            if [ \"\$en\" == \"on\" ]; then
-                sed -i 's/\\(SVA_EN.*\\?= \\)\\(0\\)/\11/g' cfg/sva.mk
-            else
-                sed -i 's/\\(SVA_EN.*\\?= \\)\\(1\\)/\10/g' cfg/sva.mk
-            fi
-        fi 
-    fi 
+    if [ -n \"\$org\" ]; then
+       echo \"set the origanization name to \$org\" 
+       sed -i \"s/\(ORG.*= \).*/\1\$org/g\" Makefile
+    fi
+
+    if [ -n \"\$prj\" ]; then
+       echo \"set the project name to \$prj\" 
+       sed -i \"s/\(PRJ.*= \).*/\1\$prj/g\" Makefile
+    fi
+
+    if [ -n \"\$editor\" ]; then
+        if [ which \$editor -ne 0 ]; then
+            echo \"\$editor not found in system, please select anthor editor\"
+            exit 1
+        else
+            #sed -i \"s/\(EDITOR *?= \).*/\1\$editor/\" Makefile
+            exit 0
+        fi
+    fi
+
+    if [ -n \"\$simulator\" ]; then
+        if [ which \$simulator -ne 0 ]; then
+            echo \"\$simulator not found in system, please select anthor simulator\"
+            exit 1
+        else
+            #sed -i \"s/\(SIMULATOR *?= \).*/\1\$simulator/\" Makefile
+            exit 0
+        fi
+    fi
+
+    if [ -n \"\$waveform\" ]; then
+        if [ which \$waveform -ne 0 ]; then
+            echo \"\$waveform not found in system, please select anthor waveform\"
+            exit 1
+        else
+            #sed -i \"s/\(WAVEFORM *?= \).*/\1\$waveform/\" Makefile
+            exit 0
+        fi
+    fi
+
     if [ -n \"\$uvm\" ]; then
-        if [ -n \"\$en\" ]; then
-            if [ \"\$en\" == \"on\" ]; then
-                sed -i 's/\\(UVM_EN.*\\?= \\)\\(0\\)/\11/g' cfg/uvm.mk
-            else
-                sed -i 's/\\(UVM_EN.*\\?= \\)\\(1\\)/\10/g' cfg/uvm.mk
+        if [ -n \"\$ver\" ]; then
+            if [ \"\$ver\" == \"1.1\" ]; then
+                echo \"change uvm version to 1.1\"
+                sed -i \"s/\(UVM_VER.*= \).*/\11.1/g\" cfg/uvm.mk
+            elif [ \"\$ver\" == \"1.2\" ]; then
+                echo \"change uvm version to 1.2\"
+                sed -i \"s/\(UVM_VER.*= \).*/\11.2/g\" cfg/uvm.mk
             fi
-        fi 
+        else
+            if [ \"\$uvm\" == \"on\" ]; then
+                echo \"turn on uvm\"
+                sed -i \"s/\(UVM_EN.*= \).*/\11/g\" cfg/uvm.mk
+            else
+                echo \"turn off uvm\"
+                sed -i \"s/\(UVM_EN.*= \).*/\10/g\" cfg/uvm.mk
+            fi
+        fi
+        exit 0
     fi 
+
+    if [ -n \"\$sva\" ]; then
+        if [ \"\$sva\" == \"on\" ]; then
+            echo \"turn on systemverilog assertion\"
+            sed -i \"s/\(SVA_EN.*= \).*/\11/g\" cfg/sva.mk
+        else
+            echo \"turn off systemverilog assertion\"
+            sed -i \"s/\(SVA_EN.*= \).*/\10/g\" cfg/sva.mk
+        fi 
+        exit 0
+    fi 
+
+    if [ -n \"\$cov\" ]; then
+        if [ \"\$cov\" == \"on\" ]; then
+            echo \"turn on coverage\"
+            sed -i \"s/\(COV_EN.*= \).*/\11/g\" cfg/cov.mk
+        else
+            echo \"turn off coverage\"
+            sed -i \"s/\(COV_EN.*= \).*/\10/g\" cfg/cov.mk
+        fi
+        exit 0
+    fi
+
 fi
 
 "
