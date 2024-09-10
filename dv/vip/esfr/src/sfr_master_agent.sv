@@ -9,6 +9,9 @@ class sfr_master_agent extends uvm_agent;
     sfr_master_monitor monitor;
     uvm_reg_block regmodel;
     reg2sfr_adapter adapter;
+    `ifdef SFR_EXPLICIT_MON
+        uvm_reg_predictor#(sfr_item) predictor;
+    `endif
 
     virtual function void build_phase(uvm_phase phase);
     
@@ -30,6 +33,9 @@ class sfr_master_agent extends uvm_agent;
                             get_full_name(),".regmodel"});
             end else begin
                 adapter = reg2sfr_adapter::type_id::create("adapter",this);
+                `ifdef SFR_EXPLICIT_MON
+                    predictor = uvm_reg_predictor#(sfr_item)::type_id::create("predictor",this);
+                `endif
             end
         end
 
@@ -43,7 +49,14 @@ class sfr_master_agent extends uvm_agent;
         driver.seq_item_port.connect(sequencer.seq_item_export);
         if(cfg.uvm_reg_enable)begin
             regmodel.default_map.set_sequencer(sequencer,adapter);
-            regmodel.default_map.set_auto_predict(1);
+            `ifdef SFR_EXPLICIT_MON
+                predictor.map = regmodel.default_map;
+                predictor.adapter = adapter;
+                regmodel.default_map.set_auto_predict(0);
+                monitor.item_collected_port.connect(predictor.bus_in);
+            `else
+                regmodel.default_map.set_auto_predict(1);
+            `endif
         end
     endfunction : connect_phase
     
