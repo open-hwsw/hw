@@ -180,6 +180,17 @@ wav:
 
 "
 
+cov_cfg="
+//+tree
+//-tree
+//+module
+//-module
+//+moduletree
+//-moduletree
+//+file
+//-file
+"
+
 cov_mk="
 COV_EN          ?= 0
 CODE_COV_EN     ?= 0
@@ -705,24 +716,31 @@ tb_main="
 \`define TB
 
 \`ifdef UVM
+    //Include the standard UVM and VIP files and packages
     \`include \"uvm_pkg.sv\"
 \`endif
 
+//TestBench Definitions
 module automatic $top_module;
 
     \`ifdef UVM
+        //Wildcard Import Packages
         import uvm_pkg::*; 
     \`endif
-    
+
     //Global Clock and Reset
     \`include \"${top_module}_gcr.sv\"
+    
+    //DUT Module Instantiation
 
-    //Connect BFM to DUT
+    //Connecting the VIP BFM to the DUT
     \`include \"${top_module}_conn.sv\"
 
     \`ifdef UVM
+        //Include Test
         \`include \"${top_module}_test_top.sv\"
         
+        //Run Test
         initial begin
             run_test();
         end
@@ -943,6 +961,8 @@ if [ ! -e run/cov/cfg/cov.cfg ]; then
 else
 	echo "file run/cov/cfg/cov.cfg exists"
 fi
+echo "$cov_cfg" > run/cov/cfg/cov.cfg
+
 #run/Makefile
 if [ ! -e run/Makefile ]; then
     touch run/Makefile 
