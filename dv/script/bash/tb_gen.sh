@@ -65,6 +65,10 @@ run_help="
 # uvm cfg
 . run -cfg -uvm xx                                  : xx can be (on, off)
 . run -cfg -uvm -ver xx                             : xx can be (1.1, 1.2)
+. run -cfg -uvm -vl xx                              : xx can be none, low, middle, high, full, debug
+. run -cfg -uvm -qc xx                              : xx is count
+. run -cfg -uvm -to xx                              : unit is second, max is 9200
+. run -cfg -uvm -dpi xx                             : xx can be (on, off), uvm hdl dpi
 
 # cov cfg
 . run -cfg -cov xx                                  : xx can be (on, off), default is off
@@ -238,7 +242,7 @@ else
 
 run_main="#!/bin/bash
 
-opts=\$(getopt -o -v -a -l cfg,org:,prj:,uvm::,ver:,sva:,cov:,editor:,simulator:,waveform:, -- \"\$@\")
+opts=\$(getopt -o -v -a -l cfg,org:,prj:,uvm::,vl:,qc:,to:,dpi:,ver:,sva:,cov:,editor:,simulator:,waveform:, -- \"\$@\")
 
 if [ \$? != 0 ]; then
     exit 1;
@@ -281,6 +285,22 @@ while :; do
                 uvm=1
                 shift 2
             fi
+            ;;
+        --vl)
+            vl=\$2
+            shift 2
+            ;;
+        --qc)
+            qc=\$2
+            shift 2
+            ;;
+        --to)
+            to=\$2
+            shift 2
+            ;;
+        --dpi)
+            dpi=\$2
+            shift 2
             ;;
         --ver)
             ver=\$2
@@ -346,6 +366,38 @@ if [ -n \"\$cfg\" ]; then
     fi
 
     if [ -n \"\$uvm\" ]; then
+        
+        if [ -n \"\$vl\" ]; then
+            if [ \"\$vl\" == \"none\" ]; then
+                echo \"change uvm verbosity to UVM_NONE\"
+            elif [ \"\$vl\" == \"low\" ]; then
+                echo \"change uvm verbosity to UVM_LOW\"
+            elif [ \"\$vl\" == \"mid\" ]; then
+                echo \"change uvm verbosity to UVM_MEDIUM\"
+            elif [ \"\$vl\" == \"high\" ]; then
+                echo \"change uvm verbosity to UVM_HIGH\"
+            elif [ \"\$vl\" == \"full\" ]; then
+                echo \"change uvm verbosity to UVM_FULL\"
+            elif [ \"\$vl\" == \"debug\" ]; then
+                echo \"change uvm verbosity to UVM_DEBUG\"
+            fi
+        fi
+
+        if [ -n \"\$qc\" ]; then
+            echo \"change uvm report max quit count to \$qc\"
+        fi
+
+        if [ -n \"\$to\" ]; then
+            echo \"change uvm simulation timeout to \$to\"
+        fi
+
+        if [ -n \"\$dpi\" ]; then
+            if [ \"\$dpi\" == \"on\" ]; then
+                echo \"turn on uvm hdl dpi\"
+            elif [ \"\$dpi\" == \"off\" ]; then
+                echo \"turn off uvm hdl dpi\"
+        fi
+
         if [ -n \"\$ver\" ]; then
             if [ \"\$ver\" == \"1.1\" ]; then
                 echo \"change uvm version to 1.1\"
