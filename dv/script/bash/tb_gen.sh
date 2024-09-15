@@ -59,16 +59,16 @@ run_help="
 
 # tools cfg
 . run -cfg -editor xx                               : set the default editor, xx can be vim / gvim / emacs / gedit / nano, defautl is gvim
-. run -cfg -simulator xx                            : set the default simulator, xx can be vcs / questaSim / verilator / vivado, default is vcs
-. run -cfg -waveform xx                             : set the default waveform, xx can be verdi / dve / gtkwave, default is verdi
+. run -cfg -simulator xx                            : set the default simulator, xx can be iverilog / verilator / vcs / questaSim / vivado, default is vcs
+. run -cfg -waveform xx                             : set the default waveform, xx can be gtkwave / verdi / dve , default is verdi
 
 # uvm cfg
-. run -cfg -uvm xx                                  : xx can be (on, off)
-. run -cfg -uvm -ver xx                             : xx can be (1.1, 1.2)
-. run -cfg -uvm -vl xx                              : xx can be none, low, middle, high, full, debug
-. run -cfg -uvm -qc xx                              : xx is count
-. run -cfg -uvm -to xx                              : unit is second, max is 9200
-. run -cfg -uvm -dpi xx                             : xx can be (on, off), uvm hdl dpi
+. run -cfg -uvm -en xx                              : xx can be (on, off), default is on
+. run -cfg -uvm -ver xx                             : xx can be (1.1, 1.2), default is 1.2
+. run -cfg -uvm -vl xx                              : xx can be none, low, medium, high, full, debug, default is medium
+. run -cfg -uvm -qc xx                              : xx is count, default is 10
+. run -cfg -uvm -to xx                              : unit is second, max is 9200, default is 5
+. run -cfg -uvm -dpi xx                             : xx can be (on, off), uvm hdl dpi, default is on
 
 # cov cfg
 . run -cfg -cov xx                                  : xx can be (on, off), default is off
@@ -242,7 +242,7 @@ else
 
 run_main="#!/bin/bash
 
-opts=\$(getopt -o -v -a -l cfg,org:,prj:,uvm::,vl:,qc:,to:,dpi:,ver:,sva:,cov:,editor:,simulator:,waveform:, -- \"\$@\")
+opts=\$(getopt -o -v -a -l cfg,org:,prj:,uvm,en:,vl:,qc:,to:,dpi:,ver:,sva:,cov:,editor:,simulator:,waveform:, -- \"\$@\")
 
 if [ \$? != 0 ]; then
     exit 1;
@@ -278,13 +278,12 @@ while :; do
             shift 2
             ;;
         --uvm)
-            if [[ \"\$3\" == \"on\" ]] || [[ \"\$3\" == \"off\" ]]; then
-                uvm=\$3
-                shift 3
-            else
-                uvm=1
-                shift 2
-            fi
+            uvm=1
+            shift 1
+            ;;
+        --en)
+            en=\$2
+            shift 2
             ;;
         --vl)
             vl=\$2
@@ -328,11 +327,13 @@ if [ -n \"\$cfg\" ]; then
     if [ -n \"\$org\" ]; then
        echo \"set the origanization name to \$org\" 
        sed -i \"s/\(ORG.*= \).*/\1\$org/g\" Makefile
+       exit 0
     fi
 
     if [ -n \"\$prj\" ]; then
        echo \"set the project name to \$prj\" 
        sed -i \"s/\(PRJ.*= \).*/\1\$prj/g\" Makefile
+       exit 0
     fi
 
     if [ -n \"\$editor\" ]; then
@@ -340,7 +341,7 @@ if [ -n \"\$cfg\" ]; then
             echo \"\$editor not found in system, please select anthor editor\"
             exit 1
         else
-            #sed -i \"s/\(EDITOR *?= \).*/\1\$editor/\" Makefile
+            sed -i \"s/\(EDITOR.*= \).*/\1\$editor/g\" Makefile
             exit 0
         fi
     fi
@@ -350,7 +351,7 @@ if [ -n \"\$cfg\" ]; then
             echo \"\$simulator not found in system, please select anthor simulator\"
             exit 1
         else
-            #sed -i \"s/\(SIMULATOR *?= \).*/\1\$simulator/\" Makefile
+            sed -i \"s/\(SIMULATOR.*= \).*/\1\$simulator/g\" Makefile
             exit 0
         fi
     fi
@@ -360,42 +361,19 @@ if [ -n \"\$cfg\" ]; then
             echo \"\$waveform not found in system, please select anthor waveform\"
             exit 1
         else
-            #sed -i \"s/\(WAVEFORM *?= \).*/\1\$waveform/\" Makefile
+            sed -i \"s/\(WAVEFORM.*= \).*/\1\$waveform/g\" Makefile
             exit 0
         fi
     fi
 
     if [ -n \"\$uvm\" ]; then
-        
-        if [ -n \"\$vl\" ]; then
-            if [ \"\$vl\" == \"none\" ]; then
-                echo \"change uvm verbosity to UVM_NONE\"
-            elif [ \"\$vl\" == \"low\" ]; then
-                echo \"change uvm verbosity to UVM_LOW\"
-            elif [ \"\$vl\" == \"mid\" ]; then
-                echo \"change uvm verbosity to UVM_MEDIUM\"
-            elif [ \"\$vl\" == \"high\" ]; then
-                echo \"change uvm verbosity to UVM_HIGH\"
-            elif [ \"\$vl\" == \"full\" ]; then
-                echo \"change uvm verbosity to UVM_FULL\"
-            elif [ \"\$vl\" == \"debug\" ]; then
-                echo \"change uvm verbosity to UVM_DEBUG\"
-            fi
-        fi
 
-        if [ -n \"\$qc\" ]; then
-            echo \"change uvm report max quit count to \$qc\"
-        fi
-
-        if [ -n \"\$to\" ]; then
-            echo \"change uvm simulation timeout to \$to\"
-        fi
-
-        if [ -n \"\$dpi\" ]; then
-            if [ \"\$dpi\" == \"on\" ]; then
-                echo \"turn on uvm hdl dpi\"
-            elif [ \"\$dpi\" == \"off\" ]; then
-                echo \"turn off uvm hdl dpi\"
+        if [ \"\$uvm\" == \"on\" ]; then
+            echo \"turn on uvm\"
+            sed -i \"s/\(UVM_EN.*= \).*/\11/g\" cfg/uvm.mk
+        else
+            echo \"turn off uvm\"
+            sed -i \"s/\(UVM_EN.*= \).*/\10/g\" cfg/uvm.mk
         fi
 
         if [ -n \"\$ver\" ]; then
@@ -406,16 +384,50 @@ if [ -n \"\$cfg\" ]; then
                 echo \"change uvm version to 1.2\"
                 sed -i \"s/\(UVM_VER.*= \).*/\11.2/g\" cfg/uvm.mk
             fi
-        else
-            if [ \"\$uvm\" == \"on\" ]; then
-                echo \"turn on uvm\"
-                sed -i \"s/\(UVM_EN.*= \).*/\11/g\" cfg/uvm.mk
-            else
-                echo \"turn off uvm\"
-                sed -i \"s/\(UVM_EN.*= \).*/\10/g\" cfg/uvm.mk
+        fi
+        
+        if [ -n \"\$vl\" ]; then
+            if [ \"\$vl\" == \"none\" ]; then
+                echo \"change uvm verbosity to UVM_NONE\"
+                sed -i \"s/\(vl.*= \).*/\1UVM_NONE/g\" cfg/uvm.mk
+            elif [ \"\$vl\" == \"low\" ]; then
+                echo \"change uvm verbosity to UVM_LOW\"
+                sed -i \"s/\(vl.*= \).*/\1UVM_LOW/g\" cfg/uvm.mk
+            elif [ \"\$vl\" == \"medium\" ]; then
+                echo \"change uvm verbosity to UVM_MEDIUM\"
+                sed -i \"s/\(vl.*= \).*/\1UVM_MEDIUM/g\" cfg/uvm.mk
+            elif [ \"\$vl\" == \"high\" ]; then
+                echo \"change uvm verbosity to UVM_HIGH\"
+                sed -i \"s/\(vl.*= \).*/\1UVM_HIGH/g\" cfg/uvm.mk
+            elif [ \"\$vl\" == \"full\" ]; then
+                echo \"change uvm verbosity to UVM_FULL\"
+                sed -i \"s/\(vl.*= \).*/\1UVM_FULL/g\" cfg/uvm.mk
+            elif [ \"\$vl\" == \"debug\" ]; then
+                echo \"change uvm verbosity to UVM_DEBUG\"
+                sed -i \"s/\(vl.*= \).*/\1UVM_DEBUG/g\" cfg/uvm.mk
             fi
         fi
-        exit 0
+
+        if [ -n \"\$qc\" ]; then
+            echo \"change uvm report max quit count to \$qc\"
+            sed -i \"s/\(qc.*= \).*/\1\$qc/g\" cfg/uvm.mk
+        fi
+
+        if [ -n \"\$to\" ]; then
+            echo \"change uvm simulation timeout to \$to\"
+            sed -i \"s/\(to.*= \).*/\1\$to/g\" cfg/uvm.mk
+        fi
+
+        if [ -n \"\$dpi\" ]; then
+            if [ \"\$dpi\" == \"on\" ]; then
+                echo \"turn on uvm hdl dpi\"
+                sed -i \"s/\(DPI_HDL_API_EN.*= \).*/\11/g\" cfg/uvm.mk
+            elif [ \"\$dpi\" == \"off\" ]; then
+                echo \"turn off uvm hdl dpi\"
+                sed -i \"s/\(DPI_HDL_API_EN.*= \).*/\10/g\" cfg/uvm.mk
+            fi
+        fi
+
     fi 
 
     if [ -n \"\$sva\" ]; then
