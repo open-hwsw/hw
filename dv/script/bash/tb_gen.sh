@@ -71,10 +71,10 @@ run_help="
 . run -cfg -uvm -dpi xx                             : xx can be (on, off), uvm hdl dpi, default is on
 
 # cov cfg
-. run -cfg -cov xx                                  : xx can be (on, off), default is off
+. run -cfg -cov -en xx                              : xx can be (on, off), default is off
 
 # sva cfg
-. run -cfg -sva xx                                  : xx can be (on, off), default is off
+. run -cfg -sva -en xx                              : xx can be (on, off), default is off
 
 # rgs cfg
 . run -cfg -rgs -tcidx xx xx                        : 1st xx tcidx, 2nd xx can be(on, off), default is on
@@ -368,10 +368,10 @@ if [ -n \"\$cfg\" ]; then
 
     if [ -n \"\$uvm\" ]; then
 
-        if [ \"\$uvm\" == \"on\" ]; then
+        if [ \"\$en\" == \"on\" ]; then
             echo \"turn on uvm\"
             sed -i \"s/\(UVM_EN.*= \).*/\11/g\" cfg/uvm.mk
-        else
+        elif [ \"\$en\" == \"off\" ]; then 
             echo \"turn off uvm\"
             sed -i \"s/\(UVM_EN.*= \).*/\10/g\" cfg/uvm.mk
         fi
@@ -431,10 +431,10 @@ if [ -n \"\$cfg\" ]; then
     fi 
 
     if [ -n \"\$sva\" ]; then
-        if [ \"\$sva\" == \"on\" ]; then
+        if [ \"\$en\" == \"on\" ]; then
             echo \"turn on systemverilog assertion\"
             sed -i \"s/\(SVA_EN.*= \).*/\11/g\" cfg/sva.mk
-        else
+        elif [ \"\$en\" == \"off\" ]; then 
             echo \"turn off systemverilog assertion\"
             sed -i \"s/\(SVA_EN.*= \).*/\10/g\" cfg/sva.mk
         fi 
@@ -442,10 +442,10 @@ if [ -n \"\$cfg\" ]; then
     fi 
 
     if [ -n \"\$cov\" ]; then
-        if [ \"\$cov\" == \"on\" ]; then
+        if [ \"\$en\" == \"on\" ]; then
             echo \"turn on coverage\"
             sed -i \"s/\(COV_EN.*= \).*/\11/g\" cfg/cov.mk
-        else
+        elif [ \"\$en\" == \"off\" ]; then 
             echo \"turn off coverage\"
             sed -i \"s/\(COV_EN.*= \).*/\10/g\" cfg/cov.mk
         fi
