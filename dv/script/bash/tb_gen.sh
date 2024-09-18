@@ -3,6 +3,7 @@
 tb_help="
 |directory or file  |description                                                        |
 |---                |---                                                                |
+|common             |common packages                                                    |
 |doc                |this directory used to store user-markdown files                   |
 |doc/readme.md      |this markdown file described directory tree                        |
 |bug                |back up bug log and waveform, share with other engineers           |
@@ -69,6 +70,8 @@ run_help="
 . run -cfg -uvm -qc xx                              : xx is count, default is 10
 . run -cfg -uvm -to xx                              : unit is second, max is 9200, default is 5
 . run -cfg -uvm -dpi xx                             : xx can be (on, off), uvm hdl dpi, default is on
+. run -cfg -uvm -ral -addrwidth xx                  : register model address bus width, default is 64
+. run -cfg -uvm -ral -datawidth xx                  : register model data bus width, default is 64
 
 # cov cfg
 . run -cfg -cov -en xx                              : xx can be (on, off), default is off
@@ -133,7 +136,6 @@ run_help="
 . run -ralgen -topblock xx                          : generate a register model by ralf file
 "
 
-
 Makefile="
 ORG         ?= 
 PRJ         ?= 
@@ -184,17 +186,6 @@ wav:
 
 "
 
-cov_cfg="
-//+tree
-//-tree
-//+module
-//-module
-//+moduletree
-//-moduletree
-//+file
-//-file
-"
-
 cov_mk="
 COV_EN          ?= 0
 CODE_COV_EN     ?= 0
@@ -223,6 +214,100 @@ cov:
     \${WAVEFORM} -cov covdir \${COV_DOR}/\${TOP_MODULE}.vdb -elfile \${TOP_MODULE}.el
 "
 
+cov_cfg="
+//+tree
+//-tree
+//+module
+//-module
+//+moduletree
+//-moduletree
+//+file
+//-file
+"
+
+dgb_mk="
+DBG_EN      ?= 1
+LOOP_DBG_EN ?= 1
+LOOP_NUM    ?= 100
+GUI_EN      ?= 0
+
+ifeq (\$(DBG_EN), 1)
+    CMP_OPTS += -kdb -debug_access+all -lca -debug_all
+
+    #endless loop debug
+    ifeq (\$(LOOP_DBG_EN), 1)
+        #CMP_OPTS += +vcs+loopreport+\$(LOOP_NUM)
+    endif
+endif
+
+ifeq (\$(GUI_EN),1)
+    SIM_OPTS += -gui
+endif
+"
+
+dump_mk="
+WAVE_EN         ?= 1
+WAVE_FORMAT     ?= FSDB
+DUMP_STRENGTH   ?= 1
+DUMP_FORCE      ?= 1
+
+ifeq (\$(WAVE)_EN), 1)
+
+ifeq (\$(WAVE_FORMAT), FSDB)
+    WAVE_DIR = wave/fsdb
+    CMP_OPTS += +vcs+fsdbon
+ifeq (\$(DUMP_STRENGTH), 1)
+    SIM_OPTS += +fsdb+strength=on
+endif
+
+ifeq (\$(DUMP_FORCE), 1)
+    SIM_OPTS += +fsdb+force
+endif
+
+else ifeq (\$(WAVE_FORMAT), VPD)
+    WAVE_DIR = wave/vpd
+else
+    WAVE_DIR = wave/vcd
+endif
+
+SIM_OPTS += +fsdbfile+\$(WAVE_DIR)/\$(tc_full_name).fsdb
+
+endif
+"
+
+lint_mk="
+CMP_OPTS += +lint=TFIPC-L
+"
+
+log_mk="
+CMP_LOG_DIR ?= log/cmp
+SIM_LOG_DIR ?= log/sim
+
+CMP_OPTS += -l \$(CMP_LOG_DIR)/cmp.log
+SIM_OPTS += -l \$(SIM_LOG_DIR)/\$(tc_full_name).log 
+"
+
+macros_mk="
+MACROS_DEBUG_EN = 0
+
+ifeq (\$(MACROS_DEBUG_EN), 1)
+    CMP_OPTS += -Xrawtoken=debug_macros
+endif
+"
+
+solver_mk="
+SEED_MANUAL ?= 1
+seed        ?= \$(shell data \"+%m%d%H%M%S\")
+
+ifeq (\$(SEED_MANUAL),1)
+    SIM_OPTS += ntb_random_seed=\$(seed)
+else
+    SIM_OPTS += ntb_random_seed_automatic
+endif
+
+SIM_OPTS += solver_array_size_warn=10000
+"
+
 sva_mk="
 SVA_EN           ?= 0
 SVA_FAIL_MAX_NUM ?= 20
@@ -240,220 +325,8 @@ else
     CMP_OPTS += -assert disable
 "
 
-run_main="#!/bin/bash
-
-opts=\$(getopt -o -v -a -l cfg,org:,prj:,uvm,en:,vl:,qc:,to:,dpi:,ver:,sva:,cov:,editor:,simulator:,waveform:, -- \"\$@\")
-
-if [ \$? != 0 ]; then
-    exit 1;
-fi
-
-eval set -- \"\$opts\"
-
-while :; do
-
-    case \$1 in
-        --cfg)
-            cfg=1
-            shift 1
-            ;;
-        --org)
-            org=\$2
-            shift 2
-            ;;
-        --prj)
-            prj=\$2
-            shift 2
-            ;;
-        --editor)
-            editor=\$2
-            shift 2
-            ;;
-        --simulator)
-            simulator=\$2
-            shift 2
-            ;;
-        --waveform)
-            waveform=\$2
-            shift 2
-            ;;
-        --uvm)
-            uvm=1
-            shift 1
-            ;;
-        --en)
-            en=\$2
-            shift 2
-            ;;
-        --vl)
-            vl=\$2
-            shift 2
-            ;;
-        --qc)
-            qc=\$2
-            shift 2
-            ;;
-        --to)
-            to=\$2
-            shift 2
-            ;;
-        --dpi)
-            dpi=\$2
-            shift 2
-            ;;
-        --ver)
-            ver=\$2
-            shift 2
-            ;;
-        --sva)
-            sva=\$2
-            shift 2
-            ;;
-        --cov)
-            cov=\$2
-            shift 2
-            ;;
-        --)
-            break
-            ;;
-        *)
-            ;;
-    esac
-
-done
-
-if [ -n \"\$cfg\" ]; then
-
-    if [ -n \"\$org\" ]; then
-       echo \"set the origanization name to \$org\" 
-       sed -i \"s/\(ORG.*= \).*/\1\$org/g\" Makefile
-       exit 0
-    fi
-
-    if [ -n \"\$prj\" ]; then
-       echo \"set the project name to \$prj\" 
-       sed -i \"s/\(PRJ.*= \).*/\1\$prj/g\" Makefile
-       exit 0
-    fi
-
-    if [ -n \"\$editor\" ]; then
-        if [ which \$editor -ne 0 ]; then
-            echo \"\$editor not found in system, please select anthor editor\"
-            exit 1
-        else
-            sed -i \"s/\(EDITOR.*= \).*/\1\$editor/g\" Makefile
-            exit 0
-        fi
-    fi
-
-    if [ -n \"\$simulator\" ]; then
-        if [ which \$simulator -ne 0 ]; then
-            echo \"\$simulator not found in system, please select anthor simulator\"
-            exit 1
-        else
-            sed -i \"s/\(SIMULATOR.*= \).*/\1\$simulator/g\" Makefile
-            exit 0
-        fi
-    fi
-
-    if [ -n \"\$waveform\" ]; then
-        if [ which \$waveform -ne 0 ]; then
-            echo \"\$waveform not found in system, please select anthor waveform\"
-            exit 1
-        else
-            sed -i \"s/\(WAVEFORM.*= \).*/\1\$waveform/g\" Makefile
-            exit 0
-        fi
-    fi
-
-    if [ -n \"\$uvm\" ]; then
-
-        if [ \"\$en\" == \"on\" ]; then
-            echo \"turn on uvm\"
-            sed -i \"s/\(UVM_EN.*= \).*/\11/g\" cfg/uvm.mk
-        elif [ \"\$en\" == \"off\" ]; then 
-            echo \"turn off uvm\"
-            sed -i \"s/\(UVM_EN.*= \).*/\10/g\" cfg/uvm.mk
-        fi
-
-        if [ -n \"\$ver\" ]; then
-            if [ \"\$ver\" == \"1.1\" ]; then
-                echo \"change uvm version to 1.1\"
-                sed -i \"s/\(UVM_VER.*= \).*/\11.1/g\" cfg/uvm.mk
-            elif [ \"\$ver\" == \"1.2\" ]; then
-                echo \"change uvm version to 1.2\"
-                sed -i \"s/\(UVM_VER.*= \).*/\11.2/g\" cfg/uvm.mk
-            fi
-        fi
-        
-        if [ -n \"\$vl\" ]; then
-            if [ \"\$vl\" == \"none\" ]; then
-                echo \"change uvm verbosity to UVM_NONE\"
-                sed -i \"s/\(vl.*= \).*/\1UVM_NONE/g\" cfg/uvm.mk
-            elif [ \"\$vl\" == \"low\" ]; then
-                echo \"change uvm verbosity to UVM_LOW\"
-                sed -i \"s/\(vl.*= \).*/\1UVM_LOW/g\" cfg/uvm.mk
-            elif [ \"\$vl\" == \"medium\" ]; then
-                echo \"change uvm verbosity to UVM_MEDIUM\"
-                sed -i \"s/\(vl.*= \).*/\1UVM_MEDIUM/g\" cfg/uvm.mk
-            elif [ \"\$vl\" == \"high\" ]; then
-                echo \"change uvm verbosity to UVM_HIGH\"
-                sed -i \"s/\(vl.*= \).*/\1UVM_HIGH/g\" cfg/uvm.mk
-            elif [ \"\$vl\" == \"full\" ]; then
-                echo \"change uvm verbosity to UVM_FULL\"
-                sed -i \"s/\(vl.*= \).*/\1UVM_FULL/g\" cfg/uvm.mk
-            elif [ \"\$vl\" == \"debug\" ]; then
-                echo \"change uvm verbosity to UVM_DEBUG\"
-                sed -i \"s/\(vl.*= \).*/\1UVM_DEBUG/g\" cfg/uvm.mk
-            fi
-        fi
-
-        if [ -n \"\$qc\" ]; then
-            echo \"change uvm report max quit count to \$qc\"
-            sed -i \"s/\(qc.*= \).*/\1\$qc/g\" cfg/uvm.mk
-        fi
-
-        if [ -n \"\$to\" ]; then
-            echo \"change uvm simulation timeout to \$to\"
-            sed -i \"s/\(to.*= \).*/\1\$to/g\" cfg/uvm.mk
-        fi
-
-        if [ -n \"\$dpi\" ]; then
-            if [ \"\$dpi\" == \"on\" ]; then
-                echo \"turn on uvm hdl dpi\"
-                sed -i \"s/\(DPI_HDL_API_EN.*= \).*/\11/g\" cfg/uvm.mk
-            elif [ \"\$dpi\" == \"off\" ]; then
-                echo \"turn off uvm hdl dpi\"
-                sed -i \"s/\(DPI_HDL_API_EN.*= \).*/\10/g\" cfg/uvm.mk
-            fi
-        fi
-
-    fi 
-
-    if [ -n \"\$sva\" ]; then
-        if [ \"\$en\" == \"on\" ]; then
-            echo \"turn on systemverilog assertion\"
-            sed -i \"s/\(SVA_EN.*= \).*/\11/g\" cfg/sva.mk
-        elif [ \"\$en\" == \"off\" ]; then 
-            echo \"turn off systemverilog assertion\"
-            sed -i \"s/\(SVA_EN.*= \).*/\10/g\" cfg/sva.mk
-        fi 
-        exit 0
-    fi 
-
-    if [ -n \"\$cov\" ]; then
-        if [ \"\$en\" == \"on\" ]; then
-            echo \"turn on coverage\"
-            sed -i \"s/\(COV_EN.*= \).*/\11/g\" cfg/cov.mk
-        elif [ \"\$en\" == \"off\" ]; then 
-            echo \"turn off coverage\"
-            sed -i \"s/\(COV_EN.*= \).*/\10/g\" cfg/cov.mk
-        fi
-        exit 0
-    fi
-
-fi
-
+timescale_mk="
+#CMP_OPTS += -override_timescale=1ns/1ps
 "
 
 uvm_mk="
@@ -546,6 +419,327 @@ endif
 endif
 "
 
+vlg_mk="
+SV_EN   ?= 1
+V2K_EN  ?= 1
+V95_EN  ?= 1
+
+ifeq (\$(SV_EN),1)
+    CMP_OPTS += -sverilog
+endif
+
+ifeq (\$(V2K_EN),1)
+    CMP_OPTS += +v2k
+endif
+"
+
+run_main="#!/bin/bash
+
+opts=\$(getopt -o -v -a -l cfg,org:,prj:,uvm,en:,vl:,qc:,to:,dpi:,ver:,ral,addrwidth:,datawidth:,sva:,cov:,editor:,simulator:,waveform:,tcgen,tcidx:,tcname: -- \"\$@\")
+
+if [ \$? != 0 ]; then
+    exit 1;
+fi
+
+eval set -- \"\$opts\"
+
+if [ \"\$1\" == \"--\" ] && [ -z \"\$2\" ]; then
+    echo \"\$run_help\"
+fi
+
+while :; do
+
+    case \$1 in
+        --cfg)
+            cfg=1
+            shift 1
+            ;;
+        --org)
+            org=\$2
+            shift 2
+            ;;
+        --prj)
+            prj=\$2
+            shift 2
+            ;;
+        --editor)
+            editor=\$2
+            shift 2
+            ;;
+        --simulator)
+            simulator=\$2
+            shift 2
+            ;;
+        --waveform)
+            waveform=\$2
+            shift 2
+            ;;
+        --uvm)
+            uvm=1
+            shift 1
+            ;;
+        --en)
+            en=\$2
+            shift 2
+            ;;
+        --vl)
+            vl=\$2
+            shift 2
+            ;;
+        --qc)
+            qc=\$2
+            shift 2
+            ;;
+        --to)
+            to=\$2
+            shift 2
+            ;;
+        --dpi)
+            dpi=\$2
+            shift 2
+            ;;
+        --ver)
+            ver=\$2
+            shift 2
+            ;;
+        --ral)
+            ral=1
+            shift 1
+            ;;
+        --addrwidth)
+            addrwidth=\$2
+            shift 2
+            ;;
+        --datawidth)
+            datawidth=\$2
+            shift 2
+            ;;
+        --sva)
+            sva=\$2
+            shift 2
+            ;;
+        --cov)
+            cov=\$2
+            shift 2
+            ;;
+        --tcgen)
+            tcgen=1
+            shift 1
+            ;;
+        --tcidx)
+            tcidx=\$2
+            shift 2
+            ;;
+        --tcname)
+            tcname=\$2
+            shift 2
+            ;;
+        --)
+            break
+            ;;
+        *)
+            ;;
+    esac
+
+done
+
+if [ -n \"\$cfg\" ]; then
+
+    if [ -n \"\$org\" ]; then
+       echo \"set the origanization name to \$org\" 
+       sed -i \"s/\(ORG.*= \).*/\1\$org/g\" Makefile
+       exit 0
+    fi
+
+    if [ -n \"\$prj\" ]; then
+       echo \"set the project name to \$prj\" 
+       sed -i \"s/\(PRJ.*= \).*/\1\$prj/g\" Makefile
+       exit 0
+    fi
+
+    if [ -n \"\$editor\" ]; then
+
+        if [ which \$editor -ne 0 ]; then
+            echo \"\$editor not found in system, please select anthor editor\"
+            exit 1
+        else
+            sed -i \"s/\(EDITOR.*= \).*/\1\$editor/g\" Makefile
+            exit 0
+        fi
+
+    fi
+
+    if [ -n \"\$simulator\" ]; then
+
+        if [ which \$simulator -ne 0 ]; then
+            echo \"\$simulator not found in system, please select anthor simulator\"
+            exit 1
+        else
+            sed -i \"s/\(SIMULATOR.*= \).*/\1\$simulator/g\" Makefile
+            exit 0
+        fi
+
+    fi
+
+    if [ -n \"\$waveform\" ]; then
+
+        if [ which \$waveform -ne 0 ]; then
+            echo \"\$waveform not found in system, please select anthor waveform\"
+            exit 1
+        else
+            sed -i \"s/\(WAVEFORM.*= \).*/\1\$waveform/g\" Makefile
+            exit 0
+        fi
+
+    fi
+
+    if [ -n \"\$uvm\" ]; then
+
+        if [ \"\$en\" == \"on\" ]; then
+            echo \"turn on uvm\"
+            sed -i \"s/\(UVM_EN.*= \).*/\11/g\" cfg/uvm.mk
+        elif [ \"\$en\" == \"off\" ]; then 
+            echo \"turn off uvm\"
+            sed -i \"s/\(UVM_EN.*= \).*/\10/g\" cfg/uvm.mk
+        fi
+
+        if [ -n \"\$ver\" ]; then
+
+            if [ \"\$ver\" == \"1.1\" ]; then
+                echo \"change uvm version to 1.1\"
+                sed -i \"s/\(UVM_VER.*= \).*/\11.1/g\" cfg/uvm.mk
+            elif [ \"\$ver\" == \"1.2\" ]; then
+                echo \"change uvm version to 1.2\"
+                sed -i \"s/\(UVM_VER.*= \).*/\11.2/g\" cfg/uvm.mk
+            fi
+
+        fi
+        
+        if [ -n \"\$vl\" ]; then
+
+            if [ \"\$vl\" == \"none\" ]; then
+                echo \"change uvm verbosity to UVM_NONE\"
+                sed -i \"s/\(vl.*= \).*/\1UVM_NONE/g\" cfg/uvm.mk
+            elif [ \"\$vl\" == \"low\" ]; then
+                echo \"change uvm verbosity to UVM_LOW\"
+                sed -i \"s/\(vl.*= \).*/\1UVM_LOW/g\" cfg/uvm.mk
+            elif [ \"\$vl\" == \"medium\" ]; then
+                echo \"change uvm verbosity to UVM_MEDIUM\"
+                sed -i \"s/\(vl.*= \).*/\1UVM_MEDIUM/g\" cfg/uvm.mk
+            elif [ \"\$vl\" == \"high\" ]; then
+                echo \"change uvm verbosity to UVM_HIGH\"
+                sed -i \"s/\(vl.*= \).*/\1UVM_HIGH/g\" cfg/uvm.mk
+            elif [ \"\$vl\" == \"full\" ]; then
+                echo \"change uvm verbosity to UVM_FULL\"
+                sed -i \"s/\(vl.*= \).*/\1UVM_FULL/g\" cfg/uvm.mk
+            elif [ \"\$vl\" == \"debug\" ]; then
+                echo \"change uvm verbosity to UVM_DEBUG\"
+                sed -i \"s/\(vl.*= \).*/\1UVM_DEBUG/g\" cfg/uvm.mk
+            fi
+
+        fi
+
+        if [ -n \"\$qc\" ]; then
+            echo \"change uvm report max quit count to \$qc\"
+            sed -i \"s/\(qc.*= \).*/\1\$qc/g\" cfg/uvm.mk
+        fi
+
+        if [ -n \"\$to\" ]; then
+            echo \"change uvm simulation timeout to \$to\"
+            sed -i \"s/\(to.*= \).*/\1\$to/g\" cfg/uvm.mk
+        fi
+
+        if [ -n \"\$dpi\" ]; then
+
+            if [ \"\$dpi\" == \"on\" ]; then
+                echo \"turn on uvm hdl dpi\"
+                sed -i \"s/\(DPI_HDL_API_EN.*= \).*/\11/g\" cfg/uvm.mk
+            elif [ \"\$dpi\" == \"off\" ]; then
+                echo \"turn off uvm hdl dpi\"
+                sed -i \"s/\(DPI_HDL_API_EN.*= \).*/\10/g\" cfg/uvm.mk
+            fi
+
+        fi
+
+        if [ -n \"\$ral\" ]; then
+
+            if [ -n \"\$addrwidth\" ]; then
+                echo \"change maximum address width in bits to \$addrwidth\"
+                sed -i \"s/\(UVM_REG_ADDR_WIDTH.*= \).*/\1\$addrwidth/g\" cfg/uvm.mk
+            fi
+
+            if [ -n \"\$datawidth\" ]; then
+                echo \"change maximum data width in bits to \$datawidth\"
+                sed -i \"s/\(UVM_REG_DATA_WIDTH.*= \).*/\1\$datawidth/g\" cfg/uvm.mk
+            fi
+
+        fi
+
+    fi 
+
+    if [ -n \"\$sva\" ]; then
+
+        if [ \"\$en\" == \"on\" ]; then
+            echo \"turn on systemverilog assertion\"
+            sed -i \"s/\(SVA_EN.*= \).*/\11/g\" cfg/sva.mk
+        elif [ \"\$en\" == \"off\" ]; then 
+            echo \"turn off systemverilog assertion\"
+            sed -i \"s/\(SVA_EN.*= \).*/\10/g\" cfg/sva.mk
+        fi 
+
+    fi 
+
+    if [ -n \"\$cov\" ]; then
+
+        if [ \"\$en\" == \"on\" ]; then
+            echo \"turn on coverage\"
+            sed -i \"s/\(COV_EN.*= \).*/\11/g\" cfg/cov.mk
+        elif [ \"\$en\" == \"off\" ]; then 
+            echo \"turn off coverage\"
+            sed -i \"s/\(COV_EN.*= \).*/\10/g\" cfg/cov.mk
+        fi
+
+    fi
+
+fi
+
+if [ -n \"\$tcgen\" ]; then
+
+    if [ -z \$tcidx ] && [ -z \$tcname ]; then
+
+        echo \"please type a valid tcidx and a tcname\"
+        exit 1
+
+    elif [ -z \$tcidx ] && [ -n \$tcname ]; then
+
+        echo \"please type a valid tcidx\"
+        exit 1
+
+    elif [ -n \$tcidx ] && [ -z \$tcname ]; then
+
+        echo \"please type a valid tcname\"
+        exit 1
+
+    else
+
+        if [[ ! \"\$tcname\" =~ .+_test$ ]]; then
+            echo \"please type a tcname with the suffix _test\"
+            exit 1
+        fi
+
+        if [ \${#tcname} -gt 50 ]; then
+            echo \"please type a tcname that character length less than or equal to 50\"
+            exit 1
+        fi
+
+        printf \"%-50s%-10s%-10s\\n\" \"\$tcname\" \"\$tcidx\" \"on\" >> ../tc/*_test_top.sv
+
+    fi
+    
+fi
+
+"
+
 while getopts "co:r:t:" opts;
 do
     case $opts in
@@ -586,6 +780,13 @@ fi
 if [[ ! "$top_module" =~ tb$ ]]; then
     echo "please setting a name with the suffix tb"
     exit 1
+fi
+
+#com
+if [ ! -d com ]; then
+    mkdir -pv com
+else
+	echo "directory com exists"
 fi
 
 #doc
@@ -746,6 +947,7 @@ fi
 #tc/test_top.sv
 if [ ! -e tc/"$top_module"_test_top.sv ]; then
     touch tc/"$top_module"_test_top.sv
+    printf "%-50s%-10s%-10s" "//tcname" "tcidx" "rgs(on/off)" >> tc/"$top_module"_test_top.sv
 else
 	echo "file tc/${top_module}_test_top.sv exists"
 fi
