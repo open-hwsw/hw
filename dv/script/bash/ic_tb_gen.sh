@@ -930,38 +930,45 @@ if [ -e ${script_bash_dir}run.sh ]; then
     ln -s ${script_bash_dir}run.sh ${run_dir}/run
 fi
 
-#uvm_interface_main="
-#\`ifndef GUARD_${vip^^}_INTERFACE_SV
-#\`define GUARD_${vip^^}_INTERFACE_SV
-#
-#interface ${vip}_if(
-#    input   clk,
-#    input   rst
-#);
-#
-#endinterface : ${vip}_if
-#
-#\`endif //GUARD_${vip^^}_INTERFACE_SV
-#"
-#
-#uvm_sequence_item_main="
-#\`ifndef GUARD_${vip^^}_ITEM_SV
-#\`define GUARD_${vip^^}_ITEM_SV
-#
-#class ${vip}_item extends uvm_sequence_item;
-#
-#    \`uvm_object_utils_begin(${vip}_item)
-#    \`uvm_object_utils_end
-#
-#    function new(string name = \"${vip}_item\")
-#        super.new(name);
-#    endfunction : new
-#
-#endclass : ${vip}_item
-#
-#\`endif //GUARD_${vip^^}_ITEM_SV
-#"
-#
+uvm_interface_main="
+\`ifndef GUARD_${vip^^}_INTERFACE_SV
+\`define GUARD_${vip^^}_INTERFACE_SV
+
+\`timescale 1ns/1ps
+
+interface ${vip}_if(
+    input   clk,
+    input   rst
+);
+
+endinterface : ${vip}_if
+
+\`endif //GUARD_${vip^^}_INTERFACE_SV
+"
+
+uvm_sequence_item_main="
+\`ifndef GUARD_${vip^^}_ITEM_SV
+\`define GUARD_${vip^^}_ITEM_SV
+
+class ${vip}_item extends uvm_sequence_item;
+
+    \`uvm_object_utils_begin(${vip}_item)
+
+    \`uvm_object_utils_end
+
+    function new(string name = \"${vip}_item\")
+        super.new(name);
+    endfunction : new
+
+    //valid_constraint_block
+
+    //reasonable_constraint_block
+
+endclass : ${vip}_item
+
+\`endif //GUARD_${vip^^}_ITEM_SV
+"
+
 #uvm_monitor_main="
 #\`ifndef GUARD_${vip^^}_MONITOR_SV
 #\`define GUARD_${vip^^}_MONITOR_SV
@@ -1126,23 +1133,104 @@ fi
 #\`endif //GUARD_${vip^^}_AGENT_SV
 #"
 #
-#uvm_pkg_main="
-#\`ifndef GUARD_${vip^^}_PKG_SV
-#\`define GUARD_${vip^^}_PKG_SV
-#
-#package ${vip}_pkg;
-#    \`include \"${vip}_item.sv\"
-#    \`include \"${vip}_monitor.sv\"
-#    \`include \"${vip}_driver.sv\"
-#    \`include \"${vip}_sequencer.sv\"
-#    \`include \"${vip}_agent.sv\"
-#endpackage : ${vip}_pkg
-#
-#\`endif //GUARD_${vip^^}_PKG_SV
-#"
+uvm_package_main="
+\`ifndef GUARD_${vip^^}_PKG_SV
+\`define GUARD_${vip^^}_PKG_SV
 
-#. run -vipgen xx : xx is vipname, create a vip demo to your project path or vip vip library
-#. run -vipadd xx : xx is vipname, add a vip from a vip library
+\`include \"${vip})if.sv\"
+\`include \"uvm_macro.svh\"
+
+package ${vip}_pkg;
+
+    import uvm_pkg::*;
+
+    typedef virtual ${vip}_if ${vip}_vif;
+
+    \`include \"${vip}_item.sv\"
+    \`include \"${vip}_config.sv\"
+    \`include \"${vip}_monitor.sv\"
+    \`include \"${vip}_driver.sv\"
+    \`include \"${vip}_sequencer.sv\"
+    \`include \"${vip}_agent.sv\"
+
+endpackage : ${vip}_pkg
+
+\`endif //GUARD_${vip^^}_PKG_SV
+"
+
+uvm_virtual_sequence="
+\`ifndef ${org^^}_${prj^^}_${top^^}_VIRTUAL_SEQUENCER_SV
+\`define ${org^^}_${prj^^}_${top^^}_VIRTUAL_SEQUENCER_SV
+
+class ${top}_virtual_sequence extends uvm_sequence;
+
+    \`uvm_object_utils(${top}_virtual_sequence)
+
+    function new(string name = \"${top}_virtual_sequence)\");
+        super.new(name)
+    endfunction : new
+
+endclass : ${top}_virtual_sequence
+
+\`end //${org^^}_${prj^^}_${top^^}_VIRTUAL_SEQUENCE_SV
+"
+
+uvm_virtual_sequencer="
+\`ifndef ${org^^}_${prj^^}_${top^^}_VIRTUAL_SEQUENCER_SV
+\`define ${org^^}_${prj^^}_${top^^}_VIRTUAL_SEQUENCER_SV
+
+class ${top}_virtual_sequencer extends uvm_sequencer;
+
+    \`uvm_component_utils(${top}_virtual_sequencer)
+
+    function new(string name = \"${top}_virtual_sequencer)\", uvm_component parent = null);
+        super.new(name,parent)
+    endfunction : new
+
+endclass : ${top}_virtual_sequencer
+
+\`end //${org^^}_${prj^^}_${top^^}_VIRTUAL_SEQUENCER_SV
+"
+
+uvm_scoreboard="
+\`ifndef ${org^^}_${prj^^}_${top^^}_SCOREBOARD_SV
+\`define ${org^^}_${prj^^}_${top^^}_SCOREBOARD_SV
+
+//The UVM Scoreboard's main function is to check the behavior of a certain DUT.
+class ${top}_scoreboard extends uvm_scoreboard;
+
+    //The UVM Scoreboard usually receives transaction carrying inputs and outputs of DUT through UVM Agent analysis ports
+
+    \`uvm_component_utils(${top}_scoreboard)
+
+    function new(string name = \"${top}_scoreboard\", uvm_component parent);
+        super.new(name,parent);
+    endfunction : new
+
+    //reference model(predictor) : run the input transactios to produce expected transactions
+
+    //compares the expected output versus the actual output
+
+endclass : ${top}_scoreboard
+
+\`endif //${org^^}_${prj^^}_${top^^}_SCOREBOARD_SV
+"
+#. run -btgen -mod
+#
+#. run -vipgen -vipname xx
+#. run -vipgen -vipname xx -onlymst
+#. run -vipgen -vipname xx -onlyslv
+#
+#. run -bt -mod xx -vipadd xx
+#. run -bt -mod xx -vipdel xx
+#
+#. run -bt -mod xx -tcidx xx
+#. run -bt -modlist
+#. run -bt -mod xx -tcgen xx
+#. run -bt -mod xx -tcgen xx -tcref xx
+#. run -bt -mod xx -tcdel xx
+#. run -bt -mod xx -tclist
+#. run -bt -mod xx -tcidx xx -tcrename xx
 
 which tree > /dev/null
 
