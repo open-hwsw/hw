@@ -1,9 +1,9 @@
 class usbpd_transmitter_driver extends uvm_driver;
 
     typedef enum bit [4:0] {
-        Sync_1 = 5'b11000,
-        Sync_2 = 5'b10001,
-        Sync_3 = 5'b00110,
+        SYNC_1 = 5'b11000,
+        SYNC_2 = 5'b10001,
+        SYNC_3 = 5'b00110,
         RST_1  = 5'b00111,
         RST_2  = 5'b11001,
         EOP    = 5'b01101
@@ -36,40 +36,40 @@ class usbpd_transmitter_driver extends uvm_driver;
 
         super.new(name);
 
-        hard_reset.k_code[0] = rst_1;
-        hard_reset.k_code[1] = rst_1;
-        hard_reset.k_code[2] = rst_1;
-        hard_reset.k_code[3] = rst_2;
+        hard_reset.k_code[0] = RST_1;
+        hard_reset.k_code[1] = RST_1;
+        hard_reset.k_code[2] = RST_1;
+        hard_reset.k_code[3] = RST_2;
 
-        cable_reset.k_code[0] = rst_1;
-        cable_reset.k_code[1] = sync_1;
-        cable_reset.k_code[2] = rst_1;
-        cable_reset.k_code[3] = sync_3;
+        cable_reset.k_code[0] = RST_1;
+        cable_reset.k_code[1] = SYNC_1;
+        cable_reset.k_code[2] = RST_1;
+        cable_reset.k_code[3] = SYNC_3;
 
-        sop.k_code[0] = sync_1;
-        sop.k_code[1] = sync_1;
-        sop.k_code[2] = sync_1;
-        sop.k_code[3] = sync_2;
+        sop.k_code[0] = SYNC_1;
+        sop.k_code[1] = SYNC_1;
+        sop.k_code[2] = SYNC_1;
+        sop.k_code[3] = SYNC_2;
 
-        sop_prime.k_code[0] = sync_1;
-        sop_prime.k_code[1] = sync_1;
-        sop_prime.k_code[2] = sync_3;
-        sop_prime.k_code[3] = sync_3;
+        sop_prime.k_code[0] = SYNC_1;
+        sop_prime.k_code[1] = SYNC_1;
+        sop_prime.k_code[2] = SYNC_3;
+        sop_prime.k_code[3] = SYNC_3;
 
-        sop_double_prime.k_code[0] = sync_1;
-        sop_double_prime.k_code[1] = sync_3;
-        sop_double_prime.k_code[2] = sync_1;
-        sop_double_prime.k_code[3] = sync_3;
+        sop_double_prime.k_code[0] = SYNC_1;
+        sop_double_prime.k_code[1] = SYNC_3;
+        sop_double_prime.k_code[2] = SYNC_1;
+        sop_double_prime.k_code[3] = SYNC_3;
 
-        sop_prime_debug.k_code[0] = sync_1;
-        sop_prime_debug.k_code[1] = rst_2;
-        sop_prime_debug.k_code[2] = rst_2;
-        sop_prime_debug.k_code[3] = sync_3;
+        sop_prime_debug.k_code[0] = SYNC_1;
+        sop_prime_debug.k_code[1] = RST_2;
+        sop_prime_debug.k_code[2] = RST_2;
+        sop_prime_debug.k_code[3] = SYNC_3;
 
-        sop_double_prime_debug.k_code[0] = sync_1;
-        sop_double_prime_debug.k_code[1] = rst_2;
-        sop_double_prime_debug.k_code[2] = sync_3;
-        sop_double_prime_debug.k_code[3] = sync_2;
+        sop_double_prime_debug.k_code[0] = SYNC_1;
+        sop_double_prime_debug.k_code[1] = RST_2;
+        sop_double_prime_debug.k_code[2] = SYNC_3;
+        sop_double_prime_debug.k_code[3] = SYNC_2;
 
     endfunction : new
 
