@@ -670,14 +670,23 @@ WAVE_EN         ?= 1
 WAVE_FORMAT     ?= FSDB
 DUMP_STRENGTH   ?= 1
 DUMP_FORCE      ?= 1
+DUMP_DELTA      ?=off
 
 ifeq (\$(WAVE)_EN), 1)
 
 ifeq (\$(WAVE_FORMAT), FSDB)
+
     WAVE_DIR = wave/fsdb
     CMP_OPTS += +vcs+fsdbon
+
 ifeq (\$(DUMP_STRENGTH), 1)
     SIM_OPTS += +fsdb+strength=on
+else
+    SIM_OPTS += +fsdb+strength=off
+endif
+
+ifeq (\$(DUMP_DELTA), 1)
+    SIM_OPTS += +fsdb+delta
 endif
 
 ifeq (\$(DUMP_FORCE), 1)
@@ -717,12 +726,17 @@ endif
 
 echo "
 SVA_EN           ?= 1
+IMMEDIATE_SVA_EN ?= 1
 SVA_FAIL_MAX_NUM ?= 20
 SVA_SUCC_EN      ?= 1
 SVA_SUCC_MAX_NUM ?= 20
 
 ifeq (\$(SVA_EN), 1)
-    CMP_OPTS += -assert enable_diag -assert dbgopt
+
+ifeq (\$(IMMEDIATE_SVA_EN), 1)
+    SIM_OPTS += -assert enable_diag 
+endif
+    CMP_OPTS += -assert dbgopt
     SIM_OPTS += -assert maxfail=\$(SVA_FAIL_MAX_NUM) +fsdb_sva_index_info +fsdb+sva_status
 ifeq (\$(SVA_SUCC_EN), 1)
     SIM_OPTS += -assert success -assert summary +maxsuccess=\$(SVA_SUCC_MAX_NUM) +fsdb+sva_success
@@ -910,6 +924,9 @@ wav:
 
 cov:
     \${WAVEFORM} -cov covdir \${COV_DOR}/\${TOP_MODULE}.vdb -elfile \${TOP_MODULE}.el
+
+sva_dbg:
+    verdi -sv -f $(TB_FILES) -ssf sv.fsdb -workMode assertionDebug
 
 " > ${run_dir}/Makefile
 
@@ -1215,7 +1232,8 @@ endclass : ${top}_scoreboard
 
 \`endif //${org^^}_${prj^^}_${top^^}_SCOREBOARD_SV
 "
-#. run -btgen -mod
+
+#. run -btgen -mod xx
 #
 #. run -vipgen -vipname xx
 #. run -vipgen -vipname xx -onlymst
@@ -1231,6 +1249,35 @@ endclass : ${top}_scoreboard
 #. run -bt -mod xx -tcdel xx
 #. run -bt -mod xx -tclist
 #. run -bt -mod xx -tcidx xx -tcrename xx
+
+run_sh="
+set -e
+opts=\$(getopt -o h -a -l btgen, mod: -- \"$@\")
+eval set -- \$opts
+
+while :; do
+    case \$1 in
+        --btgen)
+            shift 1
+            ;;
+        --)
+            break
+            ;;
+    esac
+done
+"
+
+if [ -n \$btgen ]; then
+
+    if [ -z \$mod ]; then
+        echo \"please enter a module name\"
+        exit
+    fi
+     
+    mkdir \$mod
+
+    exit
+fi
 
 which tree > /dev/null
 
