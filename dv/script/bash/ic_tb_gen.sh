@@ -1252,7 +1252,7 @@ endclass : ${top}_scoreboard
 
 run_sh="
 set -e
-opts=\$(getopt -o h -a -l btgen, mod: -- \"$@\")
+opts=\$(getopt -o h -a -l btgen, mod:, rgsnum:, reverse -- \"$@\")
 eval set -- \$opts
 
 while :; do
@@ -1260,12 +1260,19 @@ while :; do
         --btgen)
             shift 1
             ;;
+        --rgsnum)
+            rgsnum=\$2
+            shift 2
+            ;;
+        --reverse)
+            reverse=1
+            shift 1
+            ;;
         --)
             break
             ;;
     esac
 done
-"
 
 if [ -n \$btgen ]; then
 
@@ -1278,6 +1285,23 @@ if [ -n \$btgen ]; then
 
     exit
 fi
+
+if [ -n \$rgsnum ]; then
+
+    if [ -n \"\$tcidx\" ] && [ -z \"\$tcname\" ]; then
+    elif [ -z \"\$tcidx\" ] && [ -n \"\$tcname\" ]; then
+    elif [ -n \"\$tcidx\" ] && [ -n \"\$tcname\" ]; then
+    else
+        for((i=0; i < \$rgsnum; i++))
+        do
+            if [ -n \$reverse ]; then
+    
+            fi
+        done
+    fi
+
+fi
+"
 
 which tree > /dev/null
 
