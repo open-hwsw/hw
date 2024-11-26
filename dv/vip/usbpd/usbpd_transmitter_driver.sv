@@ -1,3 +1,6 @@
+`ifndef USBPD_TRANSMITTER_DRIVER_SV
+`define USBPD_TRANSMITTER_DRIVER_SV
+
 class usbpd_transmitter_driver extends uvm_driver;
 
     typedef enum bit [4:0] {
@@ -124,3 +127,5 @@ class usbpd_transmitter_driver extends uvm_driver;
     endfunction : crc_cal
 
 endclass : usbpd_transmitter_driver
+
+`endif //USBPD_TRANSMITTER_DRIVER_SV
