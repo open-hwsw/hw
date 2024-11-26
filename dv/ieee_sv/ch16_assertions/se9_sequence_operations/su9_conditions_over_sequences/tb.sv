@@ -114,4 +114,3 @@ module tb;
     assert property(burst_rule1);
 
 endmodule  tb
-
