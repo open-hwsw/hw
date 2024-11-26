@@ -108,7 +108,7 @@ module tb;
       
     property burst_rule1;
         @(posedge mclk)
-  	        $fell(burst_mode) ##0 ((!burst_mode) throughout (##2 ((trdy == 0)&&(irdy==0)) [7]));
+  	        $fell(burst_mode) ##0 ((!burst_mode) throughout (##2 ((trdy == 0)&&(irdy==0)) [*7]));
     endproperty  burst_rule1
   
     assert property(burst_rule1);
