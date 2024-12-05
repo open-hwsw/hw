@@ -8,3 +8,5 @@ sim:
 
 clr:
 	find . -type f ! -name 'tb.sv' ! -name 'Makefile' -exec rm -f {} \;
+	rm -rf csrc
+	rm -rf simv.daidir
