@@ -1,7 +1,6 @@
 class ports:
 
-    def __init__(self):
-        self.direction = None
-        self.width = None
-        self.name = None
-
+    def __init__(self, direction, width, name):
+        self.direction = name
+        self.width = width
+        self.name = name
