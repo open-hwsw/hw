@@ -24,6 +24,7 @@ class utils:
             for entries in os.listdir(self.utils_repositories_path):
                 if os.path.isdir(os.path.join(self.utils_repositories_path, entries)):
                     self.utils_list.append(entries)
+            self.utils_list.sort()
             return True
         else:
             return False
