@@ -7,6 +7,8 @@ ifeq ($(MODE), 64)
     VCS_CMP_OPTS += -full64
 endif
 
+VCS_SIM_OPTS += +ntb_random_seed=$(SEED)
+
 UVM_EN ?= 1
 UVM_TC ?=
 
@@ -29,3 +31,9 @@ SIM_LOG_DIR ?= $(LOG_DIR)/sim
 
 VCS_CMP_OPTS += -l $(CMP_LOG_DIR)/cmp.log
 VCS_SIM_OPTS += -l $(SIM_LOG_DIR)/$(TC_FULL_NAME).log
+
+COV_EN ?= 0
+COV_DIR ?= cov
+ifeq ($(COV_EN), 1)
+    -cm_dir $(COV_DIR)/$(SVN_REV)/$(TOP_MODULE).vdb
+endif
