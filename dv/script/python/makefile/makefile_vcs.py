@@ -1,1 +1,0 @@
-SVN_REV = $(shell svn info | grep 'Revision' | awk '{print $$2}')
