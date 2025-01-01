@@ -12,3 +12,7 @@ VERDI_OPTS += -workMode $(VERDI_WORK_MODE) -rcFile novas.rc -guiConf novas.conf
 
 clean:
 	@echo "echo"
+
+.PHONY: cov
+cov:
+	verdi
